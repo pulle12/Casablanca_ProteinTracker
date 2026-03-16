@@ -1,10 +1,10 @@
 [
   {
     "date": "2026-03-16",
-    "consumed": 156,
-    "target": 144,
-    "status": "skipped",
-    "reached": false
+    "consumed": 174,
+    "target": 164,
+    "status": "over",
+    "reached": true
   },
   {
     "date": "2026-03-17",

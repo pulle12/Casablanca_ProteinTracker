@@ -133,12 +133,16 @@ async function skipDay(dateInput) {
   const existingIndex = history.findIndex((item) => item.date === date);
   const existing = existingIndex >= 0 ? history[existingIndex] : null;
 
+  const existingConsumed = Number(existing?.consumed || 0);
+  const existingTarget = Number(existing?.target || 0);
+  const hasTrackedValues = existingConsumed > 0 || existingTarget > 0;
+
   const nextEntry = {
     date,
-    consumed: Number(existing?.consumed || 0),
-    target: Number(existing?.target || 0),
-    status: "skipped",
-    reached: false,
+    consumed: existingConsumed,
+    target: existingTarget,
+    status: hasTrackedValues ? String(existing?.status || "no-data") : "skipped",
+    reached: hasTrackedValues ? Boolean(existing?.reached) : false,
   };
 
   if (existingIndex >= 0) {
