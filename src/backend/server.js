@@ -80,7 +80,8 @@ app.post("/api/meals", async (req, res) => {
 app.get("/api/history", async (req, res) => {
   try {
     const days = Number(req.query.days || 7);
-    const history = await getLastDays(days);
+    const anchorDate = req.query.anchorDate;
+    const history = await getLastDays(days, anchorDate);
     return res.json(history);
   } catch (error) {
     return res.status(500).json({ error: "Historie konnte nicht geladen werden." });
@@ -109,9 +110,9 @@ app.post("/api/history/skip", async (req, res) => {
   }
 });
 
-app.get("/api/streak", async (_req, res) => {
+app.get("/api/streak", async (req, res) => {
   try {
-    const streak = await getCurrentStreak();
+    const streak = await getCurrentStreak(req.query.anchorDate);
     return res.json({ streak });
   } catch (error) {
     return res.status(500).json({ error: "Streak konnte nicht berechnet werden." });

@@ -14,6 +14,15 @@ function dateShift(baseDate, days) {
   return d.toISOString().slice(0, 10);
 }
 
+function normalizeAnchorDate(anchorDate) {
+  const input = String(anchorDate || "").trim();
+  if (/^\d{4}-\d{2}-\d{2}$/.test(input)) {
+    return input;
+  }
+
+  return todayIsoDate();
+}
+
 async function readHistory() {
   try {
     const content = await fs.readFile(HISTORY_FILE, "utf-8");
@@ -84,11 +93,11 @@ async function upsertDay(entry) {
   return nextEntry;
 }
 
-async function getLastDays(days = 7) {
+async function getLastDays(days = 7, anchorDate) {
   const count = Math.max(1, Math.min(31, Number(days) || 7));
   const history = await readHistory();
   const byDate = new Map(history.map((item) => [item.date, item]));
-  const today = todayIsoDate();
+  const today = normalizeAnchorDate(anchorDate);
   const result = [];
 
   for (let i = count - 1; i >= 0; i -= 1) {
@@ -122,7 +131,7 @@ async function skipDay(dateInput) {
     consumed: Number(existing?.consumed || 0),
     target: Number(existing?.target || 0),
     status: "skipped",
-    reached: true,
+    reached: false,
   };
 
   if (existingIndex >= 0) {
@@ -136,17 +145,33 @@ async function skipDay(dateInput) {
   return nextEntry;
 }
 
-async function getCurrentStreak() {
+async function getCurrentStreak(anchorDate) {
   const history = await readHistory();
   const byDate = new Map(history.map((item) => [item.date, item]));
-  const today = todayIsoDate();
+  const today = normalizeAnchorDate(anchorDate);
 
   let streak = 0;
+  let foundTrackableDay = false;
+
   for (let i = 0; i < 365; i += 1) {
     const date = dateShift(today, -i);
     const entry = byDate.get(date);
 
-    if (entry && entry.reached) {
+    if (!entry) {
+      if (!foundTrackableDay) {
+        continue;
+      }
+      break;
+    }
+
+    if (entry.status === "skipped") {
+      foundTrackableDay = true;
+      continue;
+    }
+
+    foundTrackableDay = true;
+
+    if (entry.reached) {
       streak += 1;
     } else {
       break;

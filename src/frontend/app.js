@@ -20,6 +20,7 @@ const dailyList = document.getElementById("daily-list");
 const statusEl = document.getElementById("status");
 const streakOutput = document.getElementById("streak-output");
 const historySummary = document.getElementById("history-summary");
+const activeDateOutput = document.getElementById("active-date-output");
 
 let target = 0;
 let consumed = 0;
@@ -27,6 +28,8 @@ let savedMeals = [];
 let dailyMeals = [];
 let progressChart;
 let historyChart;
+let activeDate;
+let profileData;
 
 function roundOne(value) {
   return Math.round(Number(value) * 10) / 10;
@@ -36,6 +39,94 @@ function todayIsoDate() {
   const now = new Date();
   const local = new Date(now.getTime() - now.getTimezoneOffset() * 60000);
   return local.toISOString().slice(0, 10);
+}
+
+function shiftIsoDate(dateString, days) {
+  const d = new Date(`${dateString}T00:00:00`);
+  d.setDate(d.getDate() + days);
+  return d.toISOString().slice(0, 10);
+}
+
+function formatIsoDateForDisplay(dateString) {
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(String(dateString || ""))) {
+    return dateString || "-";
+  }
+
+  const [year, month, day] = dateString.split("-");
+  return `${day}.${month}.${year}`;
+}
+
+function formatIsoDateShort(dateString) {
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(String(dateString || ""))) {
+    return dateString || "-";
+  }
+
+  const [, month, day] = dateString.split("-");
+  return `${day}.${month}.`;
+}
+
+function resolveInitialActiveDate() {
+  const saved = localStorage.getItem("proteintrackActiveDate");
+  if (/^\d{4}-\d{2}-\d{2}$/.test(String(saved || ""))) {
+    return saved;
+  }
+
+  return todayIsoDate();
+}
+
+function setActiveDate(dateString) {
+  activeDate = dateString;
+  localStorage.setItem("proteintrackActiveDate", dateString);
+  activeDateOutput.textContent = formatIsoDateForDisplay(dateString);
+}
+
+function loadProfileFromStorage() {
+  try {
+    const raw = localStorage.getItem("proteintrackProfile");
+    const parsed = JSON.parse(raw || "null");
+    if (!parsed) {
+      return null;
+    }
+
+    const weight = Number(parsed.weight);
+    const height = Number(parsed.height);
+    const targetValue = Number(parsed.target);
+    const bmi = Number(parsed.bmi);
+
+    if (weight <= 0 || height <= 0 || targetValue <= 0) {
+      return null;
+    }
+
+    return {
+      weight,
+      height,
+      target: roundOne(targetValue),
+      bmi: roundOne(bmi),
+    };
+  } catch (error) {
+    return null;
+  }
+}
+
+function persistProfile() {
+  if (!profileData) {
+    localStorage.removeItem("proteintrackProfile");
+    return;
+  }
+
+  localStorage.setItem("proteintrackProfile", JSON.stringify(profileData));
+}
+
+function hydrateProfileUI() {
+  if (!profileData) {
+    return;
+  }
+
+  const weightInput = document.getElementById("weight");
+  const heightInput = document.getElementById("height");
+  weightInput.value = String(profileData.weight);
+  heightInput.value = String(profileData.height);
+  targetOutput.textContent = `Dein Ziel: ${profileData.target} g Protein pro Tag (2 g/kg, BMI: ${profileData.bmi})`;
 }
 
 function setStatus(message, isError = false) {
@@ -115,7 +206,7 @@ function updateProgressChart() {
 }
 
 function renderHistoryChart(history) {
-  const labels = history.map((day) => day.date.slice(5));
+  const labels = history.map((day) => formatIsoDateShort(day.date));
   const consumedData = history.map((day) => roundOne(day.consumed));
   const targetData = history.map((day) => roundOne(day.target));
 
@@ -159,38 +250,47 @@ function renderHistoryChart(history) {
 }
 
 function renderHistorySummary(history) {
-  const reached = history.filter(
-    (d) => d.status === "reached" || d.status === "over" || d.status === "skipped"
-  ).length;
+  const reached = history.filter((d) => d.status === "reached" || d.status === "over").length;
   const under = history.filter((d) => d.status === "under").length;
   const over = history.filter((d) => d.status === "over").length;
   const skipped = history.filter((d) => d.status === "skipped").length;
   historySummary.textContent = `Letzte 7 Tage: erreicht ${reached}, unter Ziel ${under}, ueber Ziel ${over}, skipped ${skipped}`;
 }
 
-function hydrateTodayFromHistory(history) {
-  const today = todayIsoDate();
-  const todayEntry = history.find((item) => item.date === today);
+function hydrateActiveDayFromHistory(history) {
+  const activeEntry = history.find((item) => item.date === activeDate);
 
-  if (!todayEntry) {
+  if (!activeEntry) {
     return;
   }
 
-  if (target <= 0 && Number(todayEntry.target) > 0) {
-    target = roundOne(todayEntry.target);
+  if (Number(activeEntry.target) > 0) {
+    target = roundOne(activeEntry.target);
   }
 
-  if (consumed <= 0 && Number(todayEntry.consumed) > 0) {
-    consumed = roundOne(todayEntry.consumed);
-  }
+  consumed = roundOne(activeEntry.consumed || 0);
 
   updateOutputs();
   updateProgressChart();
 }
 
+function resetDailyProgress() {
+  target = roundOne(profileData?.target || 0);
+  consumed = 0;
+  dailyMeals = [];
+  if (profileData) {
+    targetOutput.textContent = `Dein Ziel: ${profileData.target} g Protein pro Tag (2 g/kg, BMI: ${profileData.bmi})`;
+  } else {
+    targetOutput.textContent = "";
+  }
+  updateOutputs();
+  renderDailyMeals();
+  updateProgressChart();
+}
+
 async function saveTodayHistory() {
   try {
-    const payload = { date: todayIsoDate() };
+    const payload = { date: activeDate };
 
     if (consumed > 0) {
       payload.consumed = roundOne(consumed);
@@ -214,9 +314,10 @@ async function saveTodayHistory() {
 
 async function refreshHistoryAndStreak() {
   try {
+    const anchorParam = encodeURIComponent(activeDate);
     const [historyRes, streakRes] = await Promise.all([
-      fetch("/api/history?days=7"),
-      fetch("/api/streak"),
+      fetch(`/api/history?days=7&anchorDate=${anchorParam}`),
+      fetch(`/api/streak?anchorDate=${anchorParam}`),
     ]);
 
     if (!historyRes.ok || !streakRes.ok) {
@@ -226,7 +327,7 @@ async function refreshHistoryAndStreak() {
     const history = await historyRes.json();
     const streakData = await streakRes.json();
 
-    hydrateTodayFromHistory(history);
+    hydrateActiveDayFromHistory(history);
     renderHistoryChart(history);
     renderHistorySummary(history);
     streakOutput.textContent = String(streakData.streak || 0);
@@ -319,6 +420,13 @@ profileForm.addEventListener("submit", async (event) => {
     }
 
     target = data.target;
+    profileData = {
+      weight: roundOne(weight),
+      height: roundOne(height),
+      target: roundOne(data.target),
+      bmi: roundOne(data.bmi),
+    };
+    persistProfile();
     targetOutput.textContent = `Dein Ziel: ${data.target} g Protein pro Tag (2 g/kg, BMI: ${data.bmi})`;
     updateOutputs();
     updateProgressChart();
@@ -409,7 +517,7 @@ skipDayButton.addEventListener("click", async () => {
     const response = await fetch("/api/history/skip", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ date: todayIsoDate() }),
+      body: JSON.stringify({ date: activeDate }),
     });
 
     const data = await response.json();
@@ -417,14 +525,23 @@ skipDayButton.addEventListener("click", async () => {
       throw new Error(data.error || "Tag konnte nicht geskippt werden.");
     }
 
+    const nextDate = shiftIsoDate(activeDate, 1);
+    setActiveDate(nextDate);
+    resetDailyProgress();
     await refreshHistoryAndStreak();
-    setStatus("Heute wurde als Skip-Day markiert. Deine Streak bleibt erhalten.");
+    setStatus("Tag wurde geskippt. Aktiver Tag wurde auf den naechsten Tag gestellt.");
   } catch (error) {
     setStatus(error.message, true);
   }
 });
 
 (async function init() {
+  profileData = loadProfileFromStorage();
+  setActiveDate(resolveInitialActiveDate());
+  hydrateProfileUI();
+  if (profileData) {
+    target = roundOne(profileData.target);
+  }
   updateOutputs();
   renderDailyMeals();
   updateProgressChart();
