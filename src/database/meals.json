@@ -1,0 +1,86 @@
+[
+  {
+    "id": "meal-1",
+    "name": "Haferflocken mit Joghurt",
+    "proteinPer100g": 12,
+    "defaultPortionGrams": 150,
+    "category": "Fruehstueck"
+  },
+  {
+    "id": "meal-2",
+    "name": "Huhn mit Reis",
+    "proteinPer100g": 24,
+    "defaultPortionGrams": 250,
+    "category": "Mittag"
+  },
+  {
+    "id": "meal-3",
+    "name": "Thunfisch Salat",
+    "proteinPer100g": 20,
+    "defaultPortionGrams": 180,
+    "category": "Abend"
+  },
+  {
+    "id": "meal-4",
+    "name": "Magerquark",
+    "proteinPer100g": 12,
+    "defaultPortionGrams": 250,
+    "category": "Snack"
+  },
+  {
+    "id": "meal-5",
+    "name": "Skyr",
+    "proteinPer100g": 11,
+    "defaultPortionGrams": 300,
+    "category": "Snack"
+  },
+  {
+    "id": "meal-6",
+    "name": "Lachs mit Kartoffeln",
+    "proteinPer100g": 22,
+    "defaultPortionGrams": 220,
+    "category": "Mittag"
+  },
+  {
+    "id": "meal-7",
+    "name": "Rindersteak",
+    "proteinPer100g": 26,
+    "defaultPortionGrams": 200,
+    "category": "Abend"
+  },
+  {
+    "id": "meal-8",
+    "name": "Tofu Bowl",
+    "proteinPer100g": 15,
+    "defaultPortionGrams": 230,
+    "category": "Vegetarisch"
+  },
+  {
+    "id": "meal-9",
+    "name": "Eier Omelette",
+    "proteinPer100g": 13,
+    "defaultPortionGrams": 200,
+    "category": "Fruehstueck"
+  },
+  {
+    "id": "meal-10",
+    "name": "Putenbrust Wrap",
+    "proteinPer100g": 18,
+    "defaultPortionGrams": 210,
+    "category": "Mittag"
+  },
+  {
+    "id": "meal-11",
+    "name": "Linsensuppe",
+    "proteinPer100g": 8,
+    "defaultPortionGrams": 350,
+    "category": "Vegetarisch"
+  },
+  {
+    "id": "meal-12",
+    "name": "Proteinshake",
+    "proteinPer100g": 20,
+    "defaultPortionGrams": 300,
+    "category": "Snack"
+  }
+]
