@@ -1,34 +1,41 @@
 [
   {
     "date": "2026-03-16",
-    "consumed": 174,
+    "consumed": 199.1,
     "target": 164,
     "status": "over",
     "reached": true
   },
   {
     "date": "2026-03-17",
-    "consumed": 198,
+    "consumed": 198.1,
     "target": 140,
-    "status": "skipped",
-    "reached": false
+    "status": "over",
+    "reached": true
   },
   {
     "date": "2026-03-18",
-    "consumed": 162,
+    "consumed": 162.1,
     "target": 144,
-    "status": "skipped",
-    "reached": false
+    "status": "over",
+    "reached": true
   },
   {
     "date": "2026-03-19",
-    "consumed": 0,
-    "target": 0,
-    "status": "skipped",
-    "reached": false
+    "consumed": 180.1,
+    "target": 164,
+    "status": "over",
+    "reached": true
   },
   {
     "date": "2026-03-20",
+    "consumed": 172.1,
+    "target": 164,
+    "status": "over",
+    "reached": true
+  },
+  {
+    "date": "2026-03-21",
     "consumed": 0,
     "target": 0,
     "status": "skipped",

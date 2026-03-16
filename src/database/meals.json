@@ -82,5 +82,12 @@
     "proteinPer100g": 20,
     "defaultPortionGrams": 300,
     "category": "Snack"
+  },
+  {
+    "id": "meal-1773657110685",
+    "name": "Test2",
+    "proteinPer100g": 25,
+    "defaultPortionGrams": 100,
+    "category": "Custom"
   }
 ]
