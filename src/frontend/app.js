@@ -15,6 +15,7 @@ const savedMealPortionInput = document.getElementById("saved-portion");
 const savedMealServingsInput = document.getElementById("saved-servings");
 const addSavedMealButton = document.getElementById("add-saved-meal");
 const skipDayButton = document.getElementById("skip-day");
+const goTodayButton = document.getElementById("go-today");
 
 const dailyList = document.getElementById("daily-list");
 const statusEl = document.getElementById("status");
@@ -42,8 +43,14 @@ function todayIsoDate() {
 }
 
 function shiftIsoDate(dateString, days) {
-  const d = new Date(`${dateString}T00:00:00`);
-  d.setDate(d.getDate() + days);
+  const parts = String(dateString || "").split("-").map(Number);
+  if (parts.length !== 3 || parts.some((part) => !Number.isFinite(part))) {
+    return todayIsoDate();
+  }
+
+  const [year, month, day] = parts;
+  const d = new Date(Date.UTC(year, month - 1, day));
+  d.setUTCDate(d.getUTCDate() + Number(days || 0));
   return d.toISOString().slice(0, 10);
 }
 
@@ -530,6 +537,17 @@ skipDayButton.addEventListener("click", async () => {
     resetDailyProgress();
     await refreshHistoryAndStreak();
     setStatus("Tag wurde geskippt. Aktiver Tag wurde auf den naechsten Tag gestellt.");
+  } catch (error) {
+    setStatus(error.message, true);
+  }
+});
+
+goTodayButton.addEventListener("click", async () => {
+  try {
+    setActiveDate(todayIsoDate());
+    resetDailyProgress();
+    await refreshHistoryAndStreak();
+    setStatus("Aktiver Tag wurde auf heute gesetzt.");
   } catch (error) {
     setStatus(error.message, true);
   }
