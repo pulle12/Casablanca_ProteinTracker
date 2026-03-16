@@ -1,7 +1,7 @@
 const express = require("express");
 const path = require("path");
 const { readMeals, addMeal } = require("./mealRepository");
-const { upsertDay, getLastDays, getCurrentStreak } = require("./historyRepository");
+const { upsertDay, skipDay, getLastDays, getCurrentStreak } = require("./historyRepository");
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -95,6 +95,17 @@ app.post("/api/history", async (req, res) => {
     return res.status(201).json(entry);
   } catch (error) {
     return res.status(500).json({ error: "Historie konnte nicht gespeichert werden." });
+  }
+});
+
+app.post("/api/history/skip", async (req, res) => {
+  const { date } = req.body || {};
+
+  try {
+    const entry = await skipDay(date);
+    return res.status(201).json(entry);
+  } catch (error) {
+    return res.status(500).json({ error: "Tag konnte nicht geskippt werden." });
   }
 });
 

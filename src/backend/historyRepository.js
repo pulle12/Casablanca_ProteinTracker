@@ -49,12 +49,22 @@ function classifyDay(consumed, target) {
 
 async function upsertDay(entry) {
   const date = String(entry.date || todayIsoDate()).slice(0, 10);
-  const consumed = Math.max(0, Number(entry.consumed || 0));
-  const target = Math.max(0, Number(entry.target || 0));
-  const status = classifyDay(consumed, target);
-
   const history = await readHistory();
   const existingIndex = history.findIndex((item) => item.date === date);
+  const existing = existingIndex >= 0 ? history[existingIndex] : null;
+
+  const hasConsumed = Number.isFinite(Number(entry.consumed));
+  const hasTarget = Number.isFinite(Number(entry.target));
+
+  const consumed = hasConsumed
+    ? Math.max(0, Number(entry.consumed))
+    : Number(existing?.consumed || 0);
+
+  const target = hasTarget
+    ? Math.max(0, Number(entry.target))
+    : Number(existing?.target || 0);
+
+  const status = classifyDay(consumed, target);
   const nextEntry = {
     date,
     consumed: Math.round(consumed * 10) / 10,
@@ -101,6 +111,31 @@ async function getLastDays(days = 7) {
   return result;
 }
 
+async function skipDay(dateInput) {
+  const date = String(dateInput || todayIsoDate()).slice(0, 10);
+  const history = await readHistory();
+  const existingIndex = history.findIndex((item) => item.date === date);
+  const existing = existingIndex >= 0 ? history[existingIndex] : null;
+
+  const nextEntry = {
+    date,
+    consumed: Number(existing?.consumed || 0),
+    target: Number(existing?.target || 0),
+    status: "skipped",
+    reached: true,
+  };
+
+  if (existingIndex >= 0) {
+    history[existingIndex] = nextEntry;
+  } else {
+    history.push(nextEntry);
+  }
+
+  history.sort((a, b) => a.date.localeCompare(b.date));
+  await writeHistory(history);
+  return nextEntry;
+}
+
 async function getCurrentStreak() {
   const history = await readHistory();
   const byDate = new Map(history.map((item) => [item.date, item]));
@@ -123,6 +158,7 @@ async function getCurrentStreak() {
 
 module.exports = {
   upsertDay,
+  skipDay,
   getLastDays,
   getCurrentStreak,
   classifyDay,

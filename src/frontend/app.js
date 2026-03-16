@@ -14,6 +14,7 @@ const savedMealsSelect = document.getElementById("saved-meals");
 const savedMealPortionInput = document.getElementById("saved-portion");
 const savedMealServingsInput = document.getElementById("saved-servings");
 const addSavedMealButton = document.getElementById("add-saved-meal");
+const skipDayButton = document.getElementById("skip-day");
 
 const dailyList = document.getElementById("daily-list");
 const statusEl = document.getElementById("status");
@@ -158,22 +159,51 @@ function renderHistoryChart(history) {
 }
 
 function renderHistorySummary(history) {
-  const reached = history.filter((d) => d.status === "reached" || d.status === "over").length;
+  const reached = history.filter(
+    (d) => d.status === "reached" || d.status === "over" || d.status === "skipped"
+  ).length;
   const under = history.filter((d) => d.status === "under").length;
   const over = history.filter((d) => d.status === "over").length;
-  historySummary.textContent = `Letzte 7 Tage: erreicht ${reached}, unter Ziel ${under}, ueber Ziel ${over}`;
+  const skipped = history.filter((d) => d.status === "skipped").length;
+  historySummary.textContent = `Letzte 7 Tage: erreicht ${reached}, unter Ziel ${under}, ueber Ziel ${over}, skipped ${skipped}`;
+}
+
+function hydrateTodayFromHistory(history) {
+  const today = todayIsoDate();
+  const todayEntry = history.find((item) => item.date === today);
+
+  if (!todayEntry) {
+    return;
+  }
+
+  if (target <= 0 && Number(todayEntry.target) > 0) {
+    target = roundOne(todayEntry.target);
+  }
+
+  if (consumed <= 0 && Number(todayEntry.consumed) > 0) {
+    consumed = roundOne(todayEntry.consumed);
+  }
+
+  updateOutputs();
+  updateProgressChart();
 }
 
 async function saveTodayHistory() {
   try {
+    const payload = { date: todayIsoDate() };
+
+    if (consumed > 0) {
+      payload.consumed = roundOne(consumed);
+    }
+
+    if (target > 0) {
+      payload.target = roundOne(target);
+    }
+
     await fetch("/api/history", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        date: todayIsoDate(),
-        consumed: roundOne(consumed),
-        target: roundOne(target),
-      }),
+      body: JSON.stringify(payload),
     });
 
     await refreshHistoryAndStreak();
@@ -196,6 +226,7 @@ async function refreshHistoryAndStreak() {
     const history = await historyRes.json();
     const streakData = await streakRes.json();
 
+    hydrateTodayFromHistory(history);
     renderHistoryChart(history);
     renderHistorySummary(history);
     streakOutput.textContent = String(streakData.streak || 0);
@@ -371,6 +402,26 @@ addSavedMealButton.addEventListener("click", async () => {
   });
   await saveTodayHistory();
   setStatus(`Mahlzeit \"${meal.name}\" hinzugefuegt (${protein} g).`);
+});
+
+skipDayButton.addEventListener("click", async () => {
+  try {
+    const response = await fetch("/api/history/skip", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ date: todayIsoDate() }),
+    });
+
+    const data = await response.json();
+    if (!response.ok) {
+      throw new Error(data.error || "Tag konnte nicht geskippt werden.");
+    }
+
+    await refreshHistoryAndStreak();
+    setStatus("Heute wurde als Skip-Day markiert. Deine Streak bleibt erhalten.");
+  } catch (error) {
+    setStatus(error.message, true);
+  }
 });
 
 (async function init() {
