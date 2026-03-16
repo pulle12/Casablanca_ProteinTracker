@@ -2,7 +2,7 @@
   {
     "date": "2026-03-16",
     "consumed": 156,
-    "target": 140,
+    "target": 144,
     "status": "skipped",
     "reached": false
   },
@@ -15,7 +15,7 @@
   },
   {
     "date": "2026-03-18",
-    "consumed": 0,
+    "consumed": 162,
     "target": 144,
     "status": "skipped",
     "reached": false

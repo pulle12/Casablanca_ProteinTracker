@@ -323,8 +323,8 @@ async function refreshHistoryAndStreak() {
   try {
     const anchorParam = encodeURIComponent(activeDate);
     const [historyRes, streakRes] = await Promise.all([
-      fetch(`/api/history?days=7&anchorDate=${anchorParam}`),
-      fetch(`/api/streak?anchorDate=${anchorParam}`),
+      fetch(`/api/history?days=7&anchorDate=${anchorParam}`, { cache: "no-store" }),
+      fetch(`/api/streak?anchorDate=${anchorParam}`, { cache: "no-store" }),
     ]);
 
     if (!historyRes.ok || !streakRes.ok) {

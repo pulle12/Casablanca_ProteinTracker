@@ -5,12 +5,19 @@ const HISTORY_FILE = path.join(__dirname, "..", "database", "history.json");
 
 function todayIsoDate() {
   const now = new Date();
-  return now.toISOString().slice(0, 10);
+  const local = new Date(now.getTime() - now.getTimezoneOffset() * 60000);
+  return local.toISOString().slice(0, 10);
 }
 
 function dateShift(baseDate, days) {
-  const d = new Date(baseDate);
-  d.setDate(d.getDate() + days);
+  const parts = String(baseDate || "").split("-").map(Number);
+  if (parts.length !== 3 || parts.some((part) => !Number.isFinite(part))) {
+    return todayIsoDate();
+  }
+
+  const [year, month, day] = parts;
+  const d = new Date(Date.UTC(year, month - 1, day));
+  d.setUTCDate(d.getUTCDate() + Number(days || 0));
   return d.toISOString().slice(0, 10);
 }
 
